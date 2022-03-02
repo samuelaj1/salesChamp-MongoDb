@@ -1,4 +1,10 @@
 # sales-champ-MongoDB WebServices
+Node.js application that exposes its API through REST service using Mongo Db as the backend database
+
+
+## Project on github
+https://github.com/samuelaj1/salesChamp-MongoDb
+
 ## Project documentation on postman
 ```
 https://documenter.getpostman.com/view/8854544/UVksNF2y
@@ -10,12 +16,13 @@ cd /salesChampWebServices
 ```
 
 ```
-install node modules - npm i
+install node modules 
+"npm i"
 ```
 
 ```
 Serving the application
-run - node server.js or nodemon
+"node server.js" or "nodemon"
 #NB: url for local server: http://localhost:8081
 ```
  
