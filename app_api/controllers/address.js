@@ -226,6 +226,7 @@ module.exports.updateAddress = function (req, res, next) {
                 address.status = status ? status : address.status;
                 address.email = email ? email : address.email;
                 address.name = name ? name : address.name;
+                address.updatedAt = new Date().toISOString();
 
                 address.save((err, addr) => {
                     if (err) {
