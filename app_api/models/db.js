@@ -1,12 +1,6 @@
 const mongoose = require('mongoose');
 
-// 'mongodb+srv://NebKin:FF3PvNt4WJBaVaCP@newsbagcluster.2qpgi.mongodb.net/NewsbagCluster?retryWrites=true&w=majority'
-let apiUrl = 'mongodb+srv://0421994733a:0421994733a@cluster0.guuoe.mongodb.net/NewsBag?retryWrites=true&w=majority';
-
-
-if (process.env.NODE_ENV === 'production') {
-    apiUrl = process.env.DATABASE_URL;
-}
+let apiUrl ="mongodb+srv://saleschamp:H3ll0w0rld!123@sales-chamop.15lkn.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 
 mongoose.connect(apiUrl, {
     useNewUrlParser: true,
@@ -21,9 +15,4 @@ mongoose.connect(apiUrl, {
     process.exit(1);
 });
 
-require('./user');
-require('./publisher');
-require('./reader');
-require('./publication');
-require('./payment');
-require("./payout");
+require('./address');
