@@ -1,5 +1,21 @@
-# sales-champ-MongoDB WebServices
+# Sales-champ-MongoDB WebServices
 Node.js application that exposes its API through REST service using Mongo Db as the backend database
+
+## Tasks handled
+```
+1. Creation of endpoints for 
+    a. Posting address
+    b. Updating address
+    c. Getting all address
+    d. Getting a specific address
+
+2. Caching of responses
+3. Validation of request data
+4. Refactoring and restructuring
+
+
+```
+
 
 
 ## Project on github
