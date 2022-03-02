@@ -1,6 +1,14 @@
 const mongoose = require('mongoose');
 const Address = mongoose.model('Address');
 
+var iso3311a2 = require('iso-3166-1-alpha-2')
+
+const {
+    addressValidation,
+    patchAddressValidation
+} = require("../../validation");
+
+
 module.exports.addressCreate = function (req, res, next) {
     let content_type = req.headers['content-type'];
     if (content_type && content_type !== 'application/json') {
@@ -9,10 +17,43 @@ module.exports.addressCreate = function (req, res, next) {
             status: false
         });
     } else {
-        const {name} = req.body;
+        const {country, city, street, postalcode, number, numberAddition} = req.body;
+        let country_codes = iso3311a2.getCodes();
+        if (country) {
+            let code_found = country_codes.indexOf(country);
+            if (code_found === -1) {
+                return res.status(422).json({
+                    success: false,
+                    message: 'Enter a valid country code',
+                });
+            }
+        } else {
+            return res.status(422).json({
+                success: false,
+                message: 'Country field is required',
+            });
+        }
+
+
+        const {error} = addressValidation(
+            {city, street, postalcode, number, numberAddition}
+        );
+
+        if (error) {
+            return res.status(422).json({
+                success: false,
+                message: error.details[0].message,
+            });
+        }
+
         Address
             .create({
-                name: name,
+                country: country,
+                city: city,
+                street: street,
+                postalcode: postalcode,
+                number: number,
+                numberAddition: numberAddition
             }, (err, address) => {
                 if (err) {
                     console.error(err);
@@ -21,13 +62,22 @@ module.exports.addressCreate = function (req, res, next) {
                         message: err.message,
                     });
                 } else {
-                    return res.status(200).json({
+                    return res.status(201).json({
                         message: "Successfully created address",
                         status: true,
                         data: {
                             id: address._id,
+                            country: address.country,
+                            city: address.city,
+                            street: address.street,
+                            postalcode: address.postalcode,
+                            number: address.number,
+                            numberAddition: address.numberAddition,
+                            createdAt: address.createdAt,
+                            updatedAt: address.updatedAt,
+                            status: address.status,
                             name: address.name,
-                            created_at: address.created_at
+                            email: address.email
                         }
                     });
                 }
@@ -55,8 +105,17 @@ module.exports.addressList = function (req, res, next) {
             let address_data = address.map(function (ad) {
                 return {
                     id: ad._id,
+                    country: ad.country,
+                    city: ad.city,
+                    street: ad.street,
+                    postalcode: ad.postalcode,
+                    number: ad.number,
+                    numberAddition: ad.numberAddition,
+                    createdAt: ad.createdAt,
+                    updatedAt: ad.updatedAt,
+                    status: ad.status,
                     name: ad.name,
-                    created_at: ad.created_at
+                    email: ad.email
                 }
             });
             return res.status(200).json({
@@ -83,7 +142,6 @@ module.exports.getAddressById = function (req, res, next) {
         Address.findById(id)
             .exec((err, address) => {
                 if (err) {
-                    console.error(err);
                     return res.status(400).json({
                         success: false,
                         message: err.message,
@@ -95,12 +153,21 @@ module.exports.getAddressById = function (req, res, next) {
                         status: true,
                         data: {
                             id: address._id,
+                            country: address.country,
+                            city: address.city,
+                            street: address.street,
+                            postalcode: address.postalcode,
+                            number: address.number,
+                            numberAddition: address.numberAddition,
+                            createdAt: address.createdAt,
+                            updatedAt: address.updatedAt,
+                            status: address.status,
                             name: address.name,
-                            created_at: address.created_at
+                            email: address.email
                         }
                     });
                 } else {
-                    return res.status(400).json({
+                    return res.status(404).json({
                         status: false,
                         message: "Address not found",
 
@@ -120,42 +187,77 @@ module.exports.updateAddress = function (req, res, next) {
         });
     } else {
         const {id} = req.params;
-        const {name} = req.body;
+        const {status, name, email} = req.body;
 
-        if (!name) {
-            return res.status(400).json({
-                status: false,
-                message: "Name field is required"
+
+        const {error} = patchAddressValidation(
+            {status, name, email}
+        );
+
+        if (error) {
+            return res.status(422).json({
+                success: false,
+                message: error.details[0].message,
             });
         }
 
-        Address.findByIdAndUpdate(id, {
-            name: name,
-        }, {
-            new: true
-        }, (err, address) => {
-            if (err) {
-                return res.status(400).json({
-                    success: false,
-                    message: err.message,
-                });
-            }
-            if (!address) {
-                return res.status(400).json({
-                    success: false,
-                    message: err.message,
-                });
-            }
-            return res.status(200).json({
-                message: "Address has been updated successfully",
-                status: true,
-                data: {
-                    id: address._id,
-                    name: address.name,
-                    created_at: address.created_at
+        Address
+            .findById(id)
+            .exec((err, address) => {
+                if (err) {
+                    return res.status(404).json({
+                        success: false,
+                        message: err.message,
+                    });
                 }
-            });
-        })
+                if (!address) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Address not found',
+                    });
+                }
+                if (status === 'not interested' || status === 'interested') {
+                    return res.status(403).json({
+                        success: false,
+                        message: 'Action cannot be completed because status selected was "' + status + '"',
+                    });
+                }
+
+                address.status = status ? status : address.status;
+                address.email = email ? email : address.email;
+                address.name = name ? name : address.name;
+
+                address.save((err, addr) => {
+                    if (err) {
+                        return res.status(404).json({
+                            success: false,
+                            message: err.message,
+                        });
+                    } else {
+                        return res.status(200).json({
+                            message: "Address has been updated successfully",
+                            status: true,
+                            data: {
+                                id: addr._id,
+                                country: addr.country,
+                                city: addr.city,
+                                street: addr.street,
+                                postalcode: addr.postalcode,
+                                number: addr.number,
+                                numberAddition: addr.numberAddition,
+                                createdAt: addr.createdAt,
+                                updatedAt: addr.updatedAt,
+                                status: addr.status,
+                                name: addr.name,
+                                email: addr.email
+                            }
+                        });
+                    }
+                });
+
+
+            })
+
     }
 
 };
@@ -180,22 +282,20 @@ module.exports.deleteAddressById = function (req, res, next) {
         }
 
         Address
-            .findByIdAndRemove(id)
+            .findByIdAndRemove(id,{
+                useFindAndModify:false
+            })
             .exec((err, address) => {
-                console.log(address)
                 if (err) {
-                    return res.status(400).json({
+                    return res.status(409).json({
                         success: false,
                         message: err.message,
                     });
                 }
                 if (address) {
-                    return res.status(200).json({
-                        message: "Address has been deleted successfully",
-                        status: true
-                    });
+                    return res.status(204).json({});
                 } else {
-                    return res.status(400).json({
+                    return res.status(404).json({
                         status: false,
                         message: "Address cannot be found"
                     });
